@@ -48,6 +48,15 @@ class FullyConnected:
             self.weights = self._optimizer.calculate_update(self.weights, self.gradient_tensor)
         return error_tensor
 
+    def initialize(self, weights_initializer, bias_initializer):
+        fan_in = self.input_size
+        fan_out = self.output_size
+        weights = weights_initializer.initialize(self.weights[:, :-1].shape, fan_in, fan_out)
+        bias = bias_initializer.initialize(self.weights.shape[0], fan_in, fan_out)
+        # expand dimension of bias from (3,) to (1, 3)
+        bias = np.expand_dims(bias, axis=1)
+        self.weights = np.concatenate((weights, bias), axis=1)
+
     @property
     def gradient_weights(self):
         return self.gradient_tensor

@@ -2,8 +2,10 @@ import copy
 
 class NeuralNetwork:
 
-    def __init__(self, optimizer):
+    def __init__(self, optimizer, weights_initializer, bias_initializer):
         self.optimizer = optimizer
+        self.weights_initializer = weights_initializer
+        self.bias_initializer = bias_initializer
         self.loss = []
         self.layers = []
         self.data_layer = None
@@ -30,8 +32,11 @@ class NeuralNetwork:
     def append_trainable_layer(self, layer):
         # set the optimizer of each trainable_layer(In FullyConnected)
         layer.optimizer = copy.deepcopy(self.optimizer)
+        # initializing the layer with the stored initializers.
+        layer.initialize = (copy.deepcopy(self.weights_initializer), copy.deepcopy(self.bias_initializer))
         # add layer into layer_list
         self.layers.append(layer)
+
 
     def train(self, iterations):
         for i in range(iterations):
