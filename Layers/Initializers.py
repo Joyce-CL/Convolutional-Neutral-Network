@@ -6,13 +6,13 @@ class Constant:
         self.weight_initialization = 0.1
 
     def initialize(self, weights_shape, fan_in, fan_out):
-        initialized_tensor = self.weight_initialization * np.ones((fan_out, fan_in))
+        initialized_tensor = self.weight_initialization * np.ones(weights_shape)
         return initialized_tensor
 
 
 class UniformRandom:
     def initialize(self, weights_shape, fan_in, fan_out):
-        initialized_tensor = np.random.rand(fan_out, fan_in)
+        initialized_tensor = np.random.rand(weights_shape)
         return initialized_tensor
 
 
