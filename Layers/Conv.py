@@ -7,7 +7,7 @@ class Conv:
     def __init__(self, stride_shape, convolution_shape, num_kernels):
         # if stride_shape is a value, it means the kernel shifts the same step in horizontal & vertical direction
         # generalization stride_shape in form (a, b)
-        # TODO a represent the stride in horizontal direction, b represent the stride in vertical direction(not sure about this)
+        # a: represent the stride in horizontal direction, b: represent the stride in vertical direction
         if len(stride_shape) == 1:
             stride_shape = (stride_shape[0], stride_shape[0])
         self.stride_shape = stride_shape
