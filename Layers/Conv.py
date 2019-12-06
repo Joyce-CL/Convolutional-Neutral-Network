@@ -15,10 +15,16 @@ class Conv:
         # if input kernel is (c, m), generalize it into (c, m, 1)
         if len(convolution_shape) == 2:
             convolution_shape = (convolution_shape[0], convolution_shape[1], 1)
-        self.convolution_shape = convolution_shape
-        self.num_kernels = num_kernels
-        self.weights = np.random.rand(num_kernels, convolution_shape[0], convolution_shape[1], convolution_shape[2])
-        self.bias = np.random.rand(num_kernels, 1)
+        self.H = num_kernels
+        self.C = convolution_shape[0]
+        self.M = convolution_shape[1]
+        self.N = convolution_shape[2]
+        self.B = None
+        self.X = None
+        self.Y = None
+        self.weights = np.random.rand(self.H, self.C, self.M, self.N)
+        self.bias = np.random.rand(self.H, 1)
+
 
     # two properties
     def get_gradient_weights(self):
@@ -39,44 +45,43 @@ class Conv:
 
     # forward
     def forward(self, input_tensor):
-        # input_tensor shape (b, c, x, y). c is the num_channels, b is the num_batches
-        # padded_input_tensor shape (b, c, x + 2 * floor(m/2) )
-        # weight shape (H, c, m, n). H is the num_kernels
-        # output shape (b, H, x', y')
-        # x' = 1 + (x + 2 * floor(m/2) - m)/stride. Here x' = x
-        # y' = 1 + (y + 2 * floor(n/2) - n)/stride. Here y' = y
+        # input_tensor shape (B, C, X, Y). C is the num_channels, B is the num_batches
+        # padded_input_tensor shape (B, C, X + 2 * floor(M/2) )
+        # weight shape (H, C, M, N). H is the num_kernels
+        # output shape (B, H, X', Y')
+        # X' = 1 + (X + 2 * floor(M/2) - M)/stride.X
+        # Y' = 1 + (Y + 2 * floor(N/2) - N)/stride.Y
 
         # generalization input_tensor
         if len(input_tensor.shape) == 3:
-            input_tensor = np.expand_dims(input_tensor, axis=1)
+            input_tensor = np.expand_dims(input_tensor, axis=3)
+
+        self.B = input_tensor.shape[0]
+        self.X = input_tensor.shape[2]
+        self.Y = input_tensor.shape[3]
 
         # output_tensor (for sub-sampling)
-        num_x = math.ceil(input_tensor.shape[2] / self.stride_shape[0])
-        num_y = math.ceil(input_tensor.shape[3] / self.stride_shape[1])
-        output_tensor = np.zeros((input_tensor.shape[0], self.num_kernels, num_x, num_y))
+        num_x = math.ceil(self.X / self.stride_shape[0])
+        num_y = math.ceil(self.Y / self.stride_shape[1])
+        output_tensor = np.zeros((self.B, self.H, self.X, self.Y))
+        output_tensor_sub = np.zeros((self.B, self.H, num_x, num_y))
 
         # do convolution, stride-shape is 1
-        for b in range(input_tensor.shape[0]):
-            for H in range(self.num_kernels):
-                for c in range(input_tensor.shape[1]):
-                    input_tensor[b, H, :, :] = sgl.convolve(input_tensor[b, c, :, :], self.weights[H, c, :, :], mode='same')
-                input_tensor[b, H, :, :] += self.bias[H]
+        for b in range(self.B):
+            for h in range(self.H):
+                for c in range(self.C):
+                    output_tensor[b, h, :, :] += sgl.correlate(input_tensor[b, c, :, :], self.weights[h, c, :, :], mode='same')
+
+                # add bias
+                output_tensor[b, h, :, :] = output_tensor[b, h, :, :] + self.bias[h]
+
                 # do sub-sampling for stride-shape isn't 1
-                # num_x = math.ceil(input_tensor.shape[2] / self.stride_shape[0])
-                # num_y = math.ceil(input_tensor.shape[3] / self.stride_shape[1])
-                # for i in range(num_x):
-                #     for j in range(num_y):
-                #         input_tensor[b, H, i, j] = input_tensor[b, H, i * self.stride_shape[0], j * self.stride_shape[1]]
+                output_tensor_sub[b, h, :, :] = output_tensor[b, h, ::self.stride_shape[0], ::self.stride_shape[1]]
 
-                # do it without loop
-                output_tensor = input_tensor[b, H,
-                                             0: input_tensor.shape[2]: self.stride_shape[0],
-                                             0: input_tensor.shape[3]: self.stride_shape[1]]
-
-        # if input_tensor is (b, c, x), change it back from (b, c, x, 1) to (b, c, x)
-        output_tensor = np.reshape(output_tensor, (input_tensor[0], self.num_kernels, input_tensor.shape[2]))
-        input_tensor = output_tensor
-        return np.copy(input_tensor)
+        # if 1D case, change output from (B, H, X', 1) to (B, H, X')
+        if output_tensor_sub.shape[3] == 1:
+            output_tensor_sub = np.reshape(output_tensor_sub, (self.B, self.H, output_tensor_sub.shape[2]))
+        return output_tensor_sub
 
         # # zero padding (considering the size of kernel can be odd or even)
         # padding_x_before = math.floor((self.convolution_shape[1] / 2))

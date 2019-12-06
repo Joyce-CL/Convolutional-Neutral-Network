@@ -12,7 +12,7 @@ class Constant:
 
 class UniformRandom:
     def initialize(self, weights_shape, fan_in, fan_out):
-        initialized_tensor = np.random.rand(weights_shape)
+        initialized_tensor = np.random.rand(weights_shape[0], weights_shape[1])
         return initialized_tensor
 
 
