@@ -11,6 +11,7 @@ class NeuralNetwork:
         self.data_layer = None
         self.loss_layer = None
         self.label_tensor = None
+        self.num=0
 
     def forward(self):
         input_tensor, self.label_tensor = self.data_layer.forward()
@@ -33,10 +34,9 @@ class NeuralNetwork:
         # set the optimizer of each trainable_layer(In FullyConnected)
         layer.optimizer = copy.deepcopy(self.optimizer)
         # initializing the layer with the stored initializers.
-        layer.initialize = (copy.deepcopy(self.weights_initializer), copy.deepcopy(self.bias_initializer))
+        layer.initialize(self.weights_initializer, self.bias_initializer)
         # add layer into layer_list
         self.layers.append(layer)
-
 
     def train(self, iterations):
         for i in range(iterations):
