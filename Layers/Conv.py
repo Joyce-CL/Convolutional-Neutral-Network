@@ -45,6 +45,7 @@ class Conv:
 
     def set_gradient_bias(self, gradient_bias):
         self._gradient_bias = gradient_bias
+
     gradient_bias = property(get_gradient_bias, set_gradient_bias)
 
     # forward
@@ -72,7 +73,6 @@ class Conv:
         num_y = math.ceil(self.Y / self.stride_shape[1])
         output_tensor = np.zeros((self.B, self.H, self.X, self.Y))
         output_tensor_sub = np.zeros((self.B, self.H, num_x, num_y))
-
         # do convolution, stride-shape is 1
         for b in range(self.B):
             for h in range(self.H):
@@ -88,6 +88,7 @@ class Conv:
         # if 1D case, change output from (B, H, X', 1) to (B, H, X')
         if output_tensor_sub.shape[3] == 1:
             output_tensor_sub = np.reshape(output_tensor_sub, (self.B, self.H, output_tensor_sub.shape[2]))
+
         return output_tensor_sub
 
     # property optimizer
@@ -98,6 +99,7 @@ class Conv:
         self._optimizer = optimizer
         self._optimizer_weights = copy.deepcopy(self._optimizer)
         self._optimizer_bias = copy.deepcopy(self._optimizer)
+
     optimizer = property(get_optimizer, set_optimizer)
 
     def backward(self, error_tensor):
@@ -132,12 +134,6 @@ class Conv:
         padding_x_right = math.floor(((self.M - 1) / 2))
         padding_y_up = math.floor((self.N / 2))
         padding_y_down = math.floor(((self.N - 1) / 2))
-        # input_tensor_pad = np.zeros((self.B, self.C,
-        #                              padding_x_left + self.X + padding_x_right,
-        #                              padding_y_up + self.Y + padding_y_down))
-        # input_tensor_pad[:, :,
-        #                  padding_x_left: padding_x_left + self.X,
-        #                  padding_y_up: padding_y_up + self.Y] = self.input_tensor
         input_tensor_pad = np.pad(input_tensor, ((0, 0), (0, 0), (padding_x_left, padding_x_right), (padding_y_up, padding_y_down)),
                                   mode="constant", constant_values=0)
 
