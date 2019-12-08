@@ -1,5 +1,5 @@
 import unittest
-from Layers import Initializers
+from Layers import Initializers, Flatten, Conv
 from Optimization import *
 import numpy as np
 from scipy import stats
@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import os
 import datetime
 
-
+#
 # class TestFullyConnected(unittest.TestCase):
 #     def setUp(self):
 #         self.batch_size = 9
@@ -289,65 +289,65 @@ import datetime
 #         np.testing.assert_almost_equal(result, np.array([-0.99999998000000034]))
 
 
-class TestInitializers(unittest.TestCase):
-    class DummyLayer:
-        def __init__(self, input_size, output_size):
-            self.weights = []
-            self.shape = (output_size, input_size)
-        
-        def initialize(self, initializer):
-            self.weights = initializer.initialize(self.shape, self.shape[1], self.shape[0])
-
-    def setUp(self):
-        self.batch_size = 9
-        self.input_size = 400
-        self.output_size = 400
-        self.num_kernels = 20
-        self.num_channels = 20
-        self.kernelsize_x = 41
-        self.kernelsize_y = 41
-        
-    def _performInitialization(self, initializer):
-        np.random.seed(1337)
-        layer = TestInitializers.DummyLayer(self.input_size, self.output_size)
-        layer.initialize(initializer)
-        weights_after_init = layer.weights.copy()
-        return layer.shape, weights_after_init
-        
-    def test_uniform_shape(self):
-        weights_shape, weights_after_init = self._performInitialization(Initializers.UniformRandom())
-        
-        self.assertEqual(weights_shape, weights_after_init.shape)
-
-    def test_uniform_distribution(self):
-        weights_shape, weights_after_init = self._performInitialization(Initializers.UniformRandom())
-
-        p_value = stats.kstest(weights_after_init.flat, 'uniform', args=(0, 1)).pvalue
-        self.assertGreater(p_value, 0.01)
-
-    def test_xavier_shape(self):
-        weights_shape, weights_after_init = self._performInitialization(Initializers.Xavier())
-
-        self.assertEqual(weights_shape, weights_after_init.shape)
-
-    def test_xavier_distribution(self):
-        weights_shape, weights_after_init = self._performInitialization(Initializers.Xavier())
-
-        scale = np.sqrt(2) / np.sqrt(self.input_size + self.output_size)
-        p_value = stats.kstest(weights_after_init.flat, 'norm', args=(0, scale)).pvalue
-        self.assertGreater(p_value, 0.01)
-
-    def test_he_shape(self):
-        weights_shape, weights_after_init = self._performInitialization(Initializers.He())
-
-        self.assertEqual(weights_shape, weights_after_init.shape)
-
-    def test_he_distribution(self):
-        weights_before_init, weights_after_init = self._performInitialization(Initializers.He())
-
-        scale = np.sqrt(2) / np.sqrt(self.input_size)
-        p_value = stats.kstest(weights_after_init.flat, 'norm', args=(0, scale)).pvalue
-        self.assertGreater(p_value, 0.01)
+# class TestInitializers(unittest.TestCase):
+#     class DummyLayer:
+#         def __init__(self, input_size, output_size):
+#             self.weights = []
+#             self.shape = (output_size, input_size)
+#
+#         def initialize(self, initializer):
+#             self.weights = initializer.initialize(self.shape, self.shape[1], self.shape[0])
+#
+#     def setUp(self):
+#         self.batch_size = 9
+#         self.input_size = 400
+#         self.output_size = 400
+#         self.num_kernels = 20
+#         self.num_channels = 20
+#         self.kernelsize_x = 41
+#         self.kernelsize_y = 41
+#
+#     def _performInitialization(self, initializer):
+#         np.random.seed(1337)
+#         layer = TestInitializers.DummyLayer(self.input_size, self.output_size)
+#         layer.initialize(initializer)
+#         weights_after_init = layer.weights.copy()
+#         return layer.shape, weights_after_init
+#
+#     def test_uniform_shape(self):
+#         weights_shape, weights_after_init = self._performInitialization(Initializers.UniformRandom())
+#
+#         self.assertEqual(weights_shape, weights_after_init.shape)
+#
+#     def test_uniform_distribution(self):
+#         weights_shape, weights_after_init = self._performInitialization(Initializers.UniformRandom())
+#
+#         p_value = stats.kstest(weights_after_init.flat, 'uniform', args=(0, 1)).pvalue
+#         self.assertGreater(p_value, 0.01)
+#
+#     def test_xavier_shape(self):
+#         weights_shape, weights_after_init = self._performInitialization(Initializers.Xavier())
+#
+#         self.assertEqual(weights_shape, weights_after_init.shape)
+#
+#     def test_xavier_distribution(self):
+#         weights_shape, weights_after_init = self._performInitialization(Initializers.Xavier())
+#
+#         scale = np.sqrt(2) / np.sqrt(self.input_size + self.output_size)
+#         p_value = stats.kstest(weights_after_init.flat, 'norm', args=(0, scale)).pvalue
+#         self.assertGreater(p_value, 0.01)
+#
+#     def test_he_shape(self):
+#         weights_shape, weights_after_init = self._performInitialization(Initializers.He())
+#
+#         self.assertEqual(weights_shape, weights_after_init.shape)
+#
+#     def test_he_distribution(self):
+#         weights_before_init, weights_after_init = self._performInitialization(Initializers.He())
+#
+#         scale = np.sqrt(2) / np.sqrt(self.input_size)
+#         p_value = stats.kstest(weights_after_init.flat, 'norm', args=(0, scale)).pvalue
+#         self.assertGreater(p_value, 0.01)
 
 
 # class TestFlatten(unittest.TestCase):
@@ -370,111 +370,111 @@ class TestInitializers(unittest.TestCase):
 #         output_tensor = flatten.forward(self.input_tensor)
 #         backward_tensor = flatten.backward(output_tensor)
 #         self.assertLessEqual(np.sum(np.abs(self.input_tensor - backward_tensor)), 1e-9)
-#
-#
-# class TestConv(unittest.TestCase):
-#     plot = False
-#     directory = 'plots/'
-#
-#     class TestInitializer:
-#         def __init__(self):
-#             self.fan_in = None
-#             self.fan_out = None
-#
-#         def initialize(self, shape, fan_in, fan_out):
-#             self.fan_in = fan_in
-#             self.fan_out = fan_out
-#             weights = np.zeros((1, 3, 3, 3))
-#             weights[0, 1, 1, 1] = 1
-#             return weights
-#
-#     def setUp(self):
-#         self.batch_size = 2
-#         self.input_shape = (3, 10, 14)
-#         self.input_size = 14 * 10 * 3
-#         self.uneven_input_shape = (3, 11, 15)
-#         self.uneven_input_size = 15 * 11 * 3
-#         self.spatial_input_shape = np.prod(self.input_shape[1:])
-#         self.kernel_shape = (3, 5, 8)
-#         self.num_kernels = 4
-#         self.hidden_channels = 3
-#
-#         self.categories = 5
-#         self.label_tensor = np.zeros([self.batch_size, self.categories])
-#         for i in range(self.batch_size):
-#             self.label_tensor[i, np.random.randint(0, self.categories)] = 1
-#
-#     def test_forward_size(self):
-#         conv = Conv.Conv((1, 1), self.kernel_shape, self.num_kernels)
-#         input_tensor = np.array(range(int(np.prod(self.input_shape) * self.batch_size)), dtype=np.float)
-#         input_tensor = input_tensor.reshape(self.batch_size, *self.input_shape)
-#         output_tensor = conv.forward(input_tensor)
-#         self.assertEqual(output_tensor.shape, (self.batch_size, self.num_kernels, *self.input_shape[1:]))
-#
-#     def test_forward_size_stride(self):
-#         conv = Conv.Conv((3, 2), self.kernel_shape, self.num_kernels)
-#         input_tensor = np.array(range(int(np.prod(self.input_shape) * self.batch_size)), dtype=np.float)
-#         input_tensor = input_tensor.reshape(self.batch_size, *self.input_shape)
-#         output_tensor = conv.forward(input_tensor)
-#         self.assertEqual(output_tensor.shape, (self.batch_size, self.num_kernels, 4, 7))
-#
-#     def test_forward_size_stride_uneven_image(self):
-#         conv = Conv.Conv((3, 2), self.kernel_shape, self.num_kernels + 1)
-#         input_tensor = np.array(range(int(np.prod(self.uneven_input_shape) * (self.batch_size + 1))), dtype=np.float)
-#         input_tensor = input_tensor.reshape(self.batch_size + 1, *self.uneven_input_shape)
-#         output_tensor = conv.forward(input_tensor)
-#         self.assertEqual(output_tensor.shape, ( self.batch_size+1, self.num_kernels+1, 4, 8))
-#
-#     def test_forward(self):
-#         np.random.seed(1337)
-#         conv = Conv.Conv((1, 1), (1, 3, 3), 1)
-#         conv.weights = (1./15.) * np.array([[[1, 2, 1], [2, 3, 2], [1, 2, 1]]])
-#         conv.bias = np.array([0])
-#         conv.weights = np.expand_dims(conv.weights, 0)
-#         input_tensor = np.random.random((1, 1, 10, 14))
-#         expected_output = gaussian_filter(input_tensor[0, 0, :, :], 0.85, mode='constant', cval=0.0, truncate=1.0)
-#         output_tensor = conv.forward(input_tensor).reshape((10, 14))
-#         difference = np.max(np.abs(expected_output - output_tensor))
-#         self.assertAlmostEqual(difference, 0., places=1)
-#
-#     def test_forward_multi_channel(self):
-#         np.random.seed(1337)
-#         maps_in = 2
-#         bias = 1
-#         conv = Conv.Conv((1, 1), (maps_in, 3, 3), 1)
-#         filter = (1./15.) * np.array([[[1, 2, 1], [2, 3, 2], [1, 2, 1]]])
-#         conv.weights = np.repeat(filter[None, ...], maps_in, axis=1)
-#         conv.bias = np.array([bias])
-#         input_tensor = np.random.random((1, maps_in, 10, 14))
-#         expected_output = bias
-#         for map_i in range(maps_in):
-#             expected_output = expected_output + gaussian_filter(input_tensor[0, map_i, :, :], 0.85, mode='constant', cval=0.0, truncate=1.0)
-#         output_tensor = conv.forward(input_tensor).reshape((10, 14))
-#         difference = np.max(np.abs(expected_output - output_tensor) / maps_in)
-#         self.assertAlmostEqual(difference, 0., places=1)
-#
-#     def test_forward_fully_connected_channels(self):
-#         np.random.seed(1337)
-#         conv = Conv.Conv((1, 1), (3, 3, 3), 1)
-#         conv.weights = (1. / 15.) * np.array([[[1, 2, 1], [2, 3, 2], [1, 2, 1]], [[1, 2, 1], [2, 3, 2], [1, 2, 1]], [[1, 2, 1], [2, 3, 2], [1, 2, 1]]])
-#         conv.bias = np.array([0])
-#         conv.weights = np.expand_dims(conv.weights, 0)
-#         tensor = np.random.random((1, 1, 10, 14))
-#         input_tensor = np.zeros((1, 3 , 10, 14))
-#         input_tensor[:,0] = tensor.copy()
-#         input_tensor[:,1] = tensor.copy()
-#         input_tensor[:,2] = tensor.copy()
-#         expected_output = 3 * gaussian_filter(input_tensor[0, 0, :, :], 0.85, mode='constant', cval=0.0, truncate=1.0)
-#         output_tensor = conv.forward(input_tensor).reshape((10, 14))
-#         difference = np.max(np.abs(expected_output - output_tensor))
-#         self.assertLess(difference, 0.2)
-#
-#     def test_1D_forward_size(self):
-#         conv = Conv.Conv([2], (3, 3), self.num_kernels)
-#         input_tensor = np.array(range(3 * 15 * self.batch_size), dtype=np.float)
-#         input_tensor = input_tensor.reshape(self.batch_size, 3, 15)
-#         output_tensor = conv.forward(input_tensor)
-#         self.assertEqual(output_tensor.shape,  (self.batch_size,self.num_kernels, 8))
+
+
+class TestConv(unittest.TestCase):
+    plot = False
+    directory = 'plots/'
+
+    class TestInitializer:
+        def __init__(self):
+            self.fan_in = None
+            self.fan_out = None
+
+        def initialize(self, shape, fan_in, fan_out):
+            self.fan_in = fan_in
+            self.fan_out = fan_out
+            weights = np.zeros((1, 3, 3, 3))
+            weights[0, 1, 1, 1] = 1
+            return weights
+
+    def setUp(self):
+        self.batch_size = 2
+        self.input_shape = (3, 10, 14)
+        self.input_size = 14 * 10 * 3
+        self.uneven_input_shape = (3, 11, 15)
+        self.uneven_input_size = 15 * 11 * 3
+        self.spatial_input_shape = np.prod(self.input_shape[1:])
+        self.kernel_shape = (3, 5, 8)
+        self.num_kernels = 4
+        self.hidden_channels = 3
+
+        self.categories = 5
+        self.label_tensor = np.zeros([self.batch_size, self.categories])
+        for i in range(self.batch_size):
+            self.label_tensor[i, np.random.randint(0, self.categories)] = 1
+
+    def test_forward_size(self):
+        conv = Conv.Conv((1, 1), self.kernel_shape, self.num_kernels)
+        input_tensor = np.array(range(int(np.prod(self.input_shape) * self.batch_size)), dtype=np.float)
+        input_tensor = input_tensor.reshape(self.batch_size, *self.input_shape)
+        output_tensor = conv.forward(input_tensor)
+        self.assertEqual(output_tensor.shape, (self.batch_size, self.num_kernels, *self.input_shape[1:]))
+
+    def test_forward_size_stride(self):
+        conv = Conv.Conv((3, 2), self.kernel_shape, self.num_kernels)
+        input_tensor = np.array(range(int(np.prod(self.input_shape) * self.batch_size)), dtype=np.float)
+        input_tensor = input_tensor.reshape(self.batch_size, *self.input_shape)
+        output_tensor = conv.forward(input_tensor)
+        self.assertEqual(output_tensor.shape, (self.batch_size, self.num_kernels, 4, 7))
+
+    def test_forward_size_stride_uneven_image(self):
+        conv = Conv.Conv((3, 2), self.kernel_shape, self.num_kernels + 1)
+        input_tensor = np.array(range(int(np.prod(self.uneven_input_shape) * (self.batch_size + 1))), dtype=np.float)
+        input_tensor = input_tensor.reshape(self.batch_size + 1, *self.uneven_input_shape)
+        output_tensor = conv.forward(input_tensor)
+        self.assertEqual(output_tensor.shape, ( self.batch_size+1, self.num_kernels+1, 4, 8))
+
+    def test_forward(self):
+        np.random.seed(1337)
+        conv = Conv.Conv((1, 1), (1, 3, 3), 1)
+        conv.weights = (1./15.) * np.array([[[1, 2, 1], [2, 3, 2], [1, 2, 1]]])
+        conv.bias = np.array([0])
+        conv.weights = np.expand_dims(conv.weights, 0)
+        input_tensor = np.random.random((1, 1, 10, 14))
+        expected_output = gaussian_filter(input_tensor[0, 0, :, :], 0.85, mode='constant', cval=0.0, truncate=1.0)
+        output_tensor = conv.forward(input_tensor).reshape((10, 14))
+        difference = np.max(np.abs(expected_output - output_tensor))
+        self.assertAlmostEqual(difference, 0., places=1)
+
+    def test_forward_multi_channel(self):
+        np.random.seed(1337)
+        maps_in = 2
+        bias = 1
+        conv = Conv.Conv((1, 1), (maps_in, 3, 3), 1)
+        filter = (1./15.) * np.array([[[1, 2, 1], [2, 3, 2], [1, 2, 1]]])
+        conv.weights = np.repeat(filter[None, ...], maps_in, axis=1)
+        conv.bias = np.array([bias])
+        input_tensor = np.random.random((1, maps_in, 10, 14))
+        expected_output = bias
+        for map_i in range(maps_in):
+            expected_output = expected_output + gaussian_filter(input_tensor[0, map_i, :, :], 0.85, mode='constant', cval=0.0, truncate=1.0)
+        output_tensor = conv.forward(input_tensor).reshape((10, 14))
+        difference = np.max(np.abs(expected_output - output_tensor) / maps_in)
+        self.assertAlmostEqual(difference, 0., places=1)
+
+    def test_forward_fully_connected_channels(self):
+        np.random.seed(1337)
+        conv = Conv.Conv((1, 1), (3, 3, 3), 1)
+        conv.weights = (1. / 15.) * np.array([[[1, 2, 1], [2, 3, 2], [1, 2, 1]], [[1, 2, 1], [2, 3, 2], [1, 2, 1]], [[1, 2, 1], [2, 3, 2], [1, 2, 1]]])
+        conv.bias = np.array([0])
+        conv.weights = np.expand_dims(conv.weights, 0)
+        tensor = np.random.random((1, 1, 10, 14))
+        input_tensor = np.zeros((1, 3 , 10, 14))
+        input_tensor[:,0] = tensor.copy()
+        input_tensor[:,1] = tensor.copy()
+        input_tensor[:,2] = tensor.copy()
+        expected_output = 3 * gaussian_filter(input_tensor[0, 0, :, :], 0.85, mode='constant', cval=0.0, truncate=1.0)
+        output_tensor = conv.forward(input_tensor).reshape((10, 14))
+        difference = np.max(np.abs(expected_output - output_tensor))
+        self.assertLess(difference, 0.2)
+
+    def test_1D_forward_size(self):
+        conv = Conv.Conv([2], (3, 3), self.num_kernels)
+        input_tensor = np.array(range(3 * 15 * self.batch_size), dtype=np.float)
+        input_tensor = input_tensor.reshape(self.batch_size, 3, 15)
+        output_tensor = conv.forward(input_tensor)
+        self.assertEqual(output_tensor.shape,  (self.batch_size,self.num_kernels, 8))
 #
 #     def test_backward_size(self):
 #         conv = Conv.Conv((1, 1), self.kernel_shape, self.num_kernels)
